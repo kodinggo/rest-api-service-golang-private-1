@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
+	log "github.com/sirupsen/logrus"
 )
 
 type storyRepository struct {
@@ -21,6 +21,7 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 	rows, err := r.db.QueryContext(ctx, `SELECT id, title, content, author_id, created_at 
 		FROM stories ORDER BY created_at DESC`)
 	if err != nil {
+		log.Errorf("faled when run query sql select, error: %v", err)
 		return
 	}
 
@@ -35,7 +36,7 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 			&authorID,
 			&story.CreatedAt)
 		if err != nil {
-			log.Printf("failed to scan field, error: %v", err)
+			log.Errorf("failed to scan field, error: %v", err)
 			continue
 		}
 
