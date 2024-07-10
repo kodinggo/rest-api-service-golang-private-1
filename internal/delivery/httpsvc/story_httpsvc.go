@@ -1,7 +1,9 @@
 package httpsvc
 
 import (
+	"encoding/base64"
 	"net/http"
+	"time"
 
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	"github.com/labstack/echo/v4"
@@ -30,11 +32,31 @@ func (h *StoryHandler) RegisterRoutes(e *echo.Echo) {
 }
 
 func (h *StoryHandler) findAll(c echo.Context) error {
-	results, _, err := h.storyUsecase.FindAll(c.Request().Context(), nil)
+	opt := new(model.StoryOptions)
+	if err := c.Bind(opt); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	results, totalItems, err := h.storyUsecase.FindAll(c.Request().Context(), opt)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	return c.JSON(http.StatusOK, results)
+
+	resp := response{
+		Status: "success",
+		Metadata: map[string]any{
+			"total_items": totalItems,
+		},
+		Data: results,
+	}
+
+	if len(results) > 0 {
+		lastCursor := results[len(results)-1].CreatedAt.Format(time.RFC3339)
+		encodedCursor := base64.StdEncoding.EncodeToString([]byte(lastCursor))
+		c.Response().Header().Set("X-Cursor", encodedCursor)
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (h *StoryHandler) findByID(c echo.Context) error {

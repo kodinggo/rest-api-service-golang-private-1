@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"sync"
 
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	log "github.com/sirupsen/logrus"
@@ -22,7 +23,19 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 		return
 	}
 
-	// TODO: resolve author
+	// resolve author
+	var wg sync.WaitGroup
+	wg.Add(len(results))
+
+	for idx, result := range results {
+		go func(idx int, result model.Story) {
+			// TODO: userRepo.FindByID(result.Author.ID)
+
+			results[idx].Author = model.User{}
+		}(idx, result)
+	}
+
+	wg.Wait()
 
 	return
 }
