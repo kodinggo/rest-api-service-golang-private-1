@@ -24,9 +24,11 @@ type StoryOptions struct {
 // TODO: Add other interface methods
 type StoryUsecase interface {
 	FindAll(ctx context.Context, opt *StoryOptions) ([]Story, int64, error)
+	Create(ctx context.Context, data Story) (*Story, error)
 }
 
 // TODO: Add other interface methods
 type StoryRepository interface {
 	FindAll(ctx context.Context, opt *StoryOptions) ([]Story, int64, error)
+	Create(ctx context.Context, data Story) (*Story, error)
 }

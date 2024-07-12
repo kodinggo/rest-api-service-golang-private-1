@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Masterminds/squirrel"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,12 +22,12 @@ func NewStoryRepository(db *sql.DB) model.StoryRepository {
 }
 
 func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
-	selectQ := squirrel.Select("id, title, content, author_id, created_at").
+	selectQ := sq.Select("id, title, content, author_id, created_at").
 		From("stories").
 		OrderBy("created_at DESC")
 
 	if opt.Search != "" {
-		selectQ = selectQ.Where(squirrel.Like{
+		selectQ = selectQ.Where(sq.Like{
 			"title": fmt.Sprintf("%%%s%%", opt.Search),
 		})
 	}
@@ -50,9 +50,9 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 		}
 
 		if strings.ToLower(opt.SortBy) == "asc" {
-			selectQ = selectQ.Where(squirrel.Gt{"created_at": cursorTime})
+			selectQ = selectQ.Where(sq.Gt{"created_at": cursorTime})
 		} else {
-			selectQ = selectQ.Where(squirrel.Lt{"created_at": cursorTime})
+			selectQ = selectQ.Where(sq.Lt{"created_at": cursorTime})
 		}
 	}
 
@@ -93,5 +93,23 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 
 	// TODO: Please find total items
 
+	return
+}
+
+func (r *storyRepository) Create(ctx context.Context, data model.Story) (result *model.Story, err error) {
+	createdAt := time.Now().UTC()
+	res, err := sq.Insert("stories").
+		Columns("title", "content", "author_id", "created_at").
+		Values(data.Title, data.Content, data.Author.ID, createdAt).
+		RunWith(r.db).
+		ExecContext(ctx)
+	if err != nil {
+		log.WithField("data", data).
+			Errorf("failed when insert data to story, error: %v", err)
+		return
+	}
+	data.ID, _ = res.LastInsertId()
+	data.CreatedAt = createdAt
+	result = &data
 	return
 }

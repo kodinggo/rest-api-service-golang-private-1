@@ -28,9 +28,10 @@ var serverCMD = &cobra.Command{
 
 		// Init Repository
 		storyRepo := repository.NewStoryRepository(dbConn)
+		userRepo := repository.NewUserRepository(dbConn)
 
 		// Init Usecase
-		storyUsecase := usecase.NewStoryUsecase(storyRepo)
+		storyUsecase := usecase.NewStoryUsecase(storyRepo, userRepo)
 
 		// Init HTTP Handler
 		h := httpsvc.NewStoryHandler(storyUsecase)

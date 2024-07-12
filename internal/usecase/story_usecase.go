@@ -10,10 +10,17 @@ import (
 
 type storyUsecase struct {
 	storyRepo model.StoryRepository
+	userRepo  model.UserRepository
 }
 
-func NewStoryUsecase(storyRepo model.StoryRepository) model.StoryUsecase {
-	return &storyUsecase{storyRepo: storyRepo}
+func NewStoryUsecase(
+	storyRepo model.StoryRepository,
+	userRepo model.UserRepository,
+) model.StoryUsecase {
+	return &storyUsecase{
+		storyRepo: storyRepo,
+		userRepo:  userRepo,
+	}
 }
 
 func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
@@ -29,13 +36,28 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 
 	for idx, result := range results {
 		go func(idx int, result model.Story) {
-			// TODO: userRepo.FindByID(result.Author.ID)
-
-			results[idx].Author = model.User{}
+			defer wg.Done()
+			user, err := u.userRepo.FindByID(ctx, result.Author.ID)
+			if err != nil {
+				log.Errorf("failed when resolve author, authorID: %d, error: %v", result.Author.ID, err)
+				return
+			}
+			if user == nil {
+				return
+			}
+			results[idx].Author = *user
 		}(idx, result)
 	}
 
 	wg.Wait()
 
 	return
+}
+
+func (u *storyUsecase) Create(ctx context.Context, data model.Story) (*model.Story, error) {
+	insertedData, err := u.storyRepo.Create(ctx, data)
+	if err != nil {
+		log.Errorf("failed create new story, error: %v", err)
+	}
+	return insertedData, err
 }

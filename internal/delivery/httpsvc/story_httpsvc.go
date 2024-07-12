@@ -65,8 +65,21 @@ func (h *StoryHandler) findByID(c echo.Context) error {
 }
 
 func (h *StoryHandler) create(c echo.Context) error {
-	// TODO
-	return c.JSON(http.StatusOK, "create")
+	// TODO: Implement Authorization by using JWT
+
+	var bodyReq model.Story
+	if err := c.Bind(&bodyReq); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err) // {"message": "error"}
+	}
+
+	bodyReq.Author.ID = 1 // FIXME: Please resolve this
+
+	insertedData, err := h.storyUsecase.Create(c.Request().Context(), bodyReq)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	return c.JSON(http.StatusCreated, insertedData)
 }
 
 func (h *StoryHandler) update(c echo.Context) error {
