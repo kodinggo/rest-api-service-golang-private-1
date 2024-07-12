@@ -32,10 +32,14 @@ var serverCMD = &cobra.Command{
 
 		// Init Usecase
 		storyUsecase := usecase.NewStoryUsecase(storyRepo, userRepo)
+		authUsecase := usecase.NewAuthUsecase(userRepo)
 
 		// Init HTTP Handler
-		h := httpsvc.NewStoryHandler(storyUsecase)
-		h.RegisterRoutes(e)
+		storyHandler := httpsvc.NewStoryHandler(storyUsecase)
+		authHandler := httpsvc.NewAuthHandler(authUsecase)
+
+		storyHandler.RegisterRoutes(e)
+		authHandler.RegisterRoutes(e)
 
 		e.Logger.Fatal(e.Start(config.Port()))
 	},
