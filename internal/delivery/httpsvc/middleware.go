@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/kodinggo/rest-api-service-golang-private-1/internal/config"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 )
 
-func authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func basicAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// ambil token dari header
 		authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
@@ -43,6 +45,45 @@ func authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			"username": username,
 			"password": password,
 		})
+
+		req := c.Request().WithContext(ctx)
+		c.SetRequest(req)
+
+		return next(c)
+	}
+}
+
+func bearerAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// ambil token dari header
+		authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+		splitAuth := strings.Split(authHeader, " ") // Basic token
+		if len(splitAuth) != 2 {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		}
+		if splitAuth[0] != "Bearer" {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		}
+
+		// decode jwt ke custom claims
+		strToken := splitAuth[1]
+		token, err := jwt.ParseWithClaims(strToken, &model.CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+			return []byte(config.JWTSigningKey()), nil
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		}
+
+		if !token.Valid {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		}
+
+		customClaims, ok := token.Claims.(*model.CustomClaims)
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		}
+
+		ctx := context.WithValue(c.Request().Context(), model.JWTKey, customClaims)
 
 		req := c.Request().WithContext(ctx)
 		c.SetRequest(req)

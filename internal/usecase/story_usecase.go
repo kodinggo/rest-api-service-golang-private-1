@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
@@ -55,6 +56,11 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 }
 
 func (u *storyUsecase) Create(ctx context.Context, data model.Story) (*model.Story, error) {
+	_, err := u.userRepo.FindByID(ctx, data.Author.ID)
+	if err != nil {
+		return nil, errors.New("invalid author")
+	}
+
 	insertedData, err := u.storyRepo.Create(ctx, data)
 	if err != nil {
 		log.Errorf("failed create new story, error: %v", err)

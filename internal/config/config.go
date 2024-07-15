@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -25,4 +26,12 @@ func InitConfig() {
 
 func Port() string {
 	return viper.GetString("port")
+}
+
+func JWTSigningKey() string {
+	return viper.GetString("jwt.signing_key")
+}
+
+func JWTExp() time.Duration {
+	return viper.GetDuration("jwt.exp")
 }

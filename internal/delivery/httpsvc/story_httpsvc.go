@@ -26,9 +26,9 @@ func (h *StoryHandler) RegisterRoutes(e *echo.Echo) {
 
 	g.GET("", h.findAll)
 	g.GET("/:id", h.findByID)
-	g.POST("", h.create)
-	g.PUT("/:id", h.update)
-	g.DELETE("/:id", h.delete)
+	g.POST("", h.create, bearerAuthMiddleware)
+	g.PUT("/:id", h.update, bearerAuthMiddleware)
+	g.DELETE("/:id", h.delete, bearerAuthMiddleware)
 }
 
 func (h *StoryHandler) findAll(c echo.Context) error {
@@ -65,14 +65,16 @@ func (h *StoryHandler) findByID(c echo.Context) error {
 }
 
 func (h *StoryHandler) create(c echo.Context) error {
-	// TODO: Implement Authorization by using JWT
-
 	var bodyReq model.Story
 	if err := c.Bind(&bodyReq); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err) // {"message": "error"}
 	}
 
-	bodyReq.Author.ID = 1 // FIXME: Please resolve this
+	claims, ok := c.Request().Context().Value(model.JWTKey).(*model.CustomClaims)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+	}
+	bodyReq.Author.ID = claims.UserID
 
 	insertedData, err := h.storyUsecase.Create(c.Request().Context(), bodyReq)
 	if err != nil {
