@@ -20,4 +20,5 @@ type UserUsecase interface {
 // TODO: Add other interface methods
 type UserRepository interface {
 	FindByID(ctx context.Context, id int64) (*User, error)
+	FindByUsername(ctx context.Context, username string) (result *User, err error)
 }

@@ -5,3 +5,6 @@ mysql:
   dbname: kodinggo
   dbusername: root
   dbpassword: 
+jwt:
+  signing_key: bq6M68YCXnv2iltpH3h6dz51xn2Uv3dh
+  exp: 24h
