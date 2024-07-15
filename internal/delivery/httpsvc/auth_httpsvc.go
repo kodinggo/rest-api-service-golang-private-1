@@ -18,6 +18,8 @@ func NewAuthHandler(authUsecase model.AuthUsecase) *AuthHandler {
 func (h *AuthHandler) RegisterRoutes(e *echo.Echo) {
 	g := e.Group("/auth")
 
+	g.Use(checkErrorMiddleware)
+
 	g.POST("/login", h.login, basicAuthMiddleware)
 }
 

@@ -3,6 +3,7 @@ package httpsvc
 import (
 	"encoding/base64"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
@@ -23,6 +24,8 @@ func NewStoryHandler(storyUsecase model.StoryUsecase) *StoryHandler {
 // RegisterRoutes is used to register routes of story handler
 func (h *StoryHandler) RegisterRoutes(e *echo.Echo) {
 	g := e.Group("/stories")
+
+	g.Use(checkErrorMiddleware)
 
 	g.GET("", h.findAll)
 	g.GET("/:id", h.findByID)
@@ -85,8 +88,26 @@ func (h *StoryHandler) create(c echo.Context) error {
 }
 
 func (h *StoryHandler) update(c echo.Context) error {
-	// TODO
-	return c.JSON(http.StatusOK, "update by id")
+	var bodyReq model.Story
+	if err := c.Bind(&bodyReq); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err) // {"message": "error"}
+	}
+
+	claims, ok := c.Request().Context().Value(model.JWTKey).(*model.CustomClaims)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+	}
+	bodyReq.Author.ID = claims.UserID
+
+	storyID, _ := strconv.Atoi(c.Param("id"))
+	bodyReq.ID = int64(storyID)
+
+	updatedData, err := h.storyUsecase.Update(c.Request().Context(), bodyReq)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, updatedData)
 }
 
 func (h *StoryHandler) delete(c echo.Context) error {

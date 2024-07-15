@@ -91,3 +91,18 @@ func bearerAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+func checkErrorMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		err := next(c)
+
+		switch err.(type) {
+		case model.ErrorNotFound:
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		case model.ErrorUnAuthorized:
+			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+}

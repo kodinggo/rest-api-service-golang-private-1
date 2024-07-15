@@ -113,3 +113,53 @@ func (r *storyRepository) Create(ctx context.Context, data model.Story) (result 
 	result = &data
 	return
 }
+
+func (r *storyRepository) Update(ctx context.Context, data model.Story) (result *model.Story, err error) {
+	updatedAt := time.Now().UTC()
+	res, err := sq.Update("stories").
+		Set("title", data.Title).
+		Set("content", data.Content).
+		Set("created_at", updatedAt).
+		Where(sq.Eq{"id": data.ID}).
+		RunWith(r.db).
+		ExecContext(ctx)
+	if err != nil {
+		log.WithField("data", data).
+			Errorf("failed when insert data to story, error: %v", err)
+		return
+	}
+	data.ID, _ = res.LastInsertId()
+	data.UpdatedAt = updatedAt
+	result = &data
+	return
+}
+
+func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story, error) {
+	row := sq.Select("id, title, content, author_id, created_at").
+		From("stories").
+		OrderBy("created_at DESC").
+		Where(sq.Eq{"id": id}).
+		RunWith(r.db).
+		QueryRowContext(ctx)
+
+	var story model.Story
+	var authorID int64
+
+	// Scan fields
+	err := row.Scan(&story.ID,
+		&story.Title,
+		&story.Content,
+		&authorID,
+		&story.CreatedAt)
+	if err != nil {
+		log.Errorf("failed to scan field, error: %v", err)
+		return nil, err
+	}
+
+	// Collect all rows to "results"
+	story.Author = model.User{
+		ID: authorID,
+	}
+
+	return &story, nil
+}

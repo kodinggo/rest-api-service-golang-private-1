@@ -67,3 +67,21 @@ func (u *storyUsecase) Create(ctx context.Context, data model.Story) (*model.Sto
 	}
 	return insertedData, err
 }
+
+func (u *storyUsecase) Update(ctx context.Context, data model.Story) (*model.Story, error) {
+	_, err := u.userRepo.FindByID(ctx, data.Author.ID)
+	if err != nil {
+		return nil, model.NewErrorUnAuthorized("invalid author")
+	}
+
+	story, err := u.storyRepo.FindByID(ctx, data.ID)
+	if err != nil || story == nil {
+		return nil, model.NewErrorNotFound("story not found") // TODO: Create error type
+	}
+
+	insertedData, err := u.storyRepo.Update(ctx, data)
+	if err != nil {
+		log.Errorf("failed create new story, error: %v", err)
+	}
+	return insertedData, err
+}
