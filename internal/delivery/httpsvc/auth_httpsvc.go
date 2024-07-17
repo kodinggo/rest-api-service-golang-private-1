@@ -26,18 +26,18 @@ func (h *AuthHandler) RegisterRoutes(e *echo.Echo) {
 func (h *AuthHandler) login(c echo.Context) error {
 	authMap, ok := c.Request().Context().Value(model.LoginKey).(map[string]string)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		return model.NewErrorUnAuthorized("invalid token")
 	}
 
 	username := authMap["username"]
 	password := authMap["password"]
 	if username == "" || password == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		return model.NewErrorUnAuthorized("invalid token")
 	}
 
 	token, err := h.authUsecase.Login(c.Request().Context(), username, password)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return err
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{

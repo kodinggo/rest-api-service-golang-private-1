@@ -101,8 +101,14 @@ func checkErrorMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		case model.ErrorUnAuthorized:
 			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		case model.ErrorBadRequest:
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		return nil
 	}
 }

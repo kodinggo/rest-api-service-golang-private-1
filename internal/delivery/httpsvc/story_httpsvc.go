@@ -2,6 +2,7 @@ package httpsvc
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -37,12 +38,12 @@ func (h *StoryHandler) RegisterRoutes(e *echo.Echo) {
 func (h *StoryHandler) findAll(c echo.Context) error {
 	opt := new(model.StoryOptions)
 	if err := c.Bind(opt); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		return model.NewErrorBadRequest(err.Error())
 	}
 
 	results, totalItems, err := h.storyUsecase.FindAll(c.Request().Context(), opt)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return err
 	}
 
 	resp := response{
@@ -70,18 +71,24 @@ func (h *StoryHandler) findByID(c echo.Context) error {
 func (h *StoryHandler) create(c echo.Context) error {
 	var bodyReq model.Story
 	if err := c.Bind(&bodyReq); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err) // {"message": "error"}
+		return model.NewErrorBadRequest(err.Error())
 	}
 
 	claims, ok := c.Request().Context().Value(model.JWTKey).(*model.CustomClaims)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		return model.NewErrorUnAuthorized("invalid token")
 	}
 	bodyReq.Author.ID = claims.UserID
 
+	// validate struct
+	err := validate.Struct(bodyReq)
+	if err != nil {
+		return model.NewErrorBadRequest(fmt.Sprintf("error validation: %s", err.Error()))
+	}
+
 	insertedData, err := h.storyUsecase.Create(c.Request().Context(), bodyReq)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		return err
 	}
 
 	return c.JSON(http.StatusCreated, insertedData)
@@ -90,12 +97,12 @@ func (h *StoryHandler) create(c echo.Context) error {
 func (h *StoryHandler) update(c echo.Context) error {
 	var bodyReq model.Story
 	if err := c.Bind(&bodyReq); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err) // {"message": "error"}
+		return model.NewErrorBadRequest(err.Error())
 	}
 
 	claims, ok := c.Request().Context().Value(model.JWTKey).(*model.CustomClaims)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		return model.NewErrorUnAuthorized("invalid token")
 	}
 	bodyReq.Author.ID = claims.UserID
 
