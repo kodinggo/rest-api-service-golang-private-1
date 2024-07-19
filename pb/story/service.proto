@@ -1,0 +1,23 @@
+syntax = "proto3";
+package pb.story;
+
+option go_package = "pb/story";
+
+import "google/protobuf/empty.proto";
+
+import "pb/story/story.proto";
+import "pb/story/user.proto";
+import "pb/story/story_service.proto";
+import "pb/story/user_service.proto";
+
+service StoryService {
+    rpc FindAll(FindAllStoriesRequest) returns (Stories);
+    rpc FindByID(FindStoryByIDRequest) returns (Story);
+    rpc Create(CreateStoryRequest) returns (Story);
+    rpc Update(UpdateStoryRequest) returns (Story);
+    rpc Delete(DeleteStoryRequest) returns (google.protobuf.Empty);
+}
+
+service UserService {
+    rpc FindByID(FindUserByIDRequest) returns (User);
+}

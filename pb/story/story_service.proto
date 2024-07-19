@@ -1,0 +1,31 @@
+syntax = "proto3";
+package pb.story;
+
+option go_package = "pb/story";
+
+message FindAllStoriesRequest {
+    string search = 1;
+    string sort_by = 2;
+    string cursor = 3;
+}
+
+message FindStoryByIDRequest {
+    int64 id = 1;
+}
+
+message CreateStoryRequest {
+    string title = 1;
+    string content = 2;
+    int64 author_id = 3;
+}
+
+message UpdateStoryRequest {
+    int64 id = 1;
+    string title = 2;
+    string content = 3;
+    int64 author_id = 4;
+}
+
+message DeleteStoryRequest {
+    int64 id = 1;
+}

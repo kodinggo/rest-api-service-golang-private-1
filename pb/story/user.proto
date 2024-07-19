@@ -1,0 +1,12 @@
+syntax = "proto3";
+package pb.story;
+
+option go_package = "pb/story";
+
+import "google/protobuf/timestamp.proto";
+
+message User {
+    int64 id = 1;
+    string username = 2;
+    google.protobuf.Timestamp created_at = 3;
+}

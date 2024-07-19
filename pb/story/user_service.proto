@@ -1,0 +1,8 @@
+syntax = "proto3";
+package pb.story;
+
+option go_package = "pb/story";
+
+message FindUserByIDRequest {
+    int64 id = 1;
+}
