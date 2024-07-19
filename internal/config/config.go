@@ -28,6 +28,10 @@ func Port() string {
 	return viper.GetString("port")
 }
 
+func GRPCPort() string {
+	return viper.GetString("grpc_port")
+}
+
 func JWTSigningKey() string {
 	return viper.GetString("jwt.signing_key")
 }
