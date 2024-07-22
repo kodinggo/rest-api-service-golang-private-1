@@ -8,19 +8,25 @@ import (
 )
 
 type Story struct {
-	ID        int64     `json:"id"`
-	Title     string    `json:"title" validate:"required"`
-	Content   string    `json:"content" validate:"required"`
-	Author    User      `json:"author"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"-"`
-	DeletedAt time.Time `json:"-"`
+	ID        int64          `json:"id"`
+	Title     string         `json:"title" validate:"required"`
+	Content   string         `json:"content" validate:"required"`
+	Author    User           `json:"author"`
+	CreatedAt time.Time      `json:"created_at"`
+	Comments  []StoryComment `json:"comments"`
+	UpdatedAt time.Time      `json:"-"`
+	DeletedAt time.Time      `json:"-"`
 }
 
 type StoryOptions struct {
 	Search string `query:"search"`
 	SortBy string `query:"sort_by"`
 	Cursor string `query:"cursor"`
+}
+
+type StoryComment struct {
+	ID      int64  `json:"id"`
+	Comment string `json:"comment"`
 }
 
 // TODO: Add other interface methods

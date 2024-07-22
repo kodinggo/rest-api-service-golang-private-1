@@ -5,22 +5,26 @@ import (
 	"errors"
 	"sync"
 
+	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	log "github.com/sirupsen/logrus"
 )
 
 type storyUsecase struct {
-	storyRepo model.StoryRepository
-	userRepo  model.UserRepository
+	storyRepo         model.StoryRepository
+	userRepo          model.UserRepository
+	grpcCommentClient pbComment.CommentServiceClient
 }
 
 func NewStoryUsecase(
 	storyRepo model.StoryRepository,
 	userRepo model.UserRepository,
+	grpcCommentClient pbComment.CommentServiceClient,
 ) model.StoryUsecase {
 	return &storyUsecase{
-		storyRepo: storyRepo,
-		userRepo:  userRepo,
+		storyRepo:         storyRepo,
+		userRepo:          userRepo,
+		grpcCommentClient: grpcCommentClient,
 	}
 }
 
@@ -33,9 +37,33 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 
 	// resolve author
 	var wg sync.WaitGroup
-	wg.Add(len(results))
+	wg.Add(len(results) * 2)
 
 	for idx, result := range results {
+		go func(idx int, result model.Story) {
+			defer wg.Done()
+			// Manggil gRPC comment
+			pbComments, err := u.grpcCommentClient.FindAllCommentsByStoryID(ctx,
+				&pbComment.FindAllCommentsByStoryIDRequest{
+					StoryId: result.ID,
+				})
+			if err != nil || pbComments == nil {
+				log.Errorf("failed when resolve comments, storyID: %d, error: %v", result.ID, err)
+				return
+			}
+
+			// Convert dari protobuf comment ke main comment entity
+			var comments []model.StoryComment
+			for _, pbComment := range pbComments.Comments {
+				comments = append(comments, model.StoryComment{
+					ID:      pbComment.Id,
+					Comment: pbComment.Comment,
+				})
+			}
+
+			results[idx].Comments = comments
+		}(idx, result)
+
 		go func(idx int, result model.Story) {
 			defer wg.Done()
 			user, err := u.userRepo.FindByID(ctx, result.Author.ID)
