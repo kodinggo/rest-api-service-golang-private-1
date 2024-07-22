@@ -3,7 +3,9 @@ package grpcsvc
 import (
 	"context"
 
+	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	pb "github.com/kodinggo/rest-api-service-golang-private-1/pb/story"
+	"github.com/labstack/gommon/log"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -11,14 +13,42 @@ type StoryService struct {
 	// default method from story service protobuf
 	// if we don't implement method yet, clients are able to call method stub but return error
 	pb.UnimplementedStoryServiceServer
+
+	storyUsecase model.StoryUsecase
 }
 
-func NewStoryService() *StoryService {
-	return &StoryService{}
+func NewStoryService(storyUsecase model.StoryUsecase) *StoryService {
+	return &StoryService{storyUsecase: storyUsecase}
 }
 
 func (s *StoryService) FindAll(ctx context.Context, in *pb.FindAllStoriesRequest) (*pb.Stories, error) {
-	panic("need implementation")
+	stories, _, err := s.storyUsecase.FindAll(ctx, &model.StoryOptions{
+		Search: in.Search,
+		SortBy: in.SortBy,
+		Cursor: in.Cursor,
+	})
+	if err != nil {
+		log.Errorf("failed find all stories, error: %v", err)
+		return nil, err
+	}
+
+	// Konversi dari main entity ke protobuf
+	var pbStories []*pb.Story
+	for _, story := range stories {
+		pbStories = append(pbStories, &pb.Story{
+			Id:      story.ID,
+			Title:   story.Title,
+			Content: story.Content,
+			Author: &pb.User{
+				Id:       story.Author.ID,
+				Username: story.Author.Username,
+			},
+		})
+	}
+
+	return &pb.Stories{
+		Stories: pbStories,
+	}, nil
 }
 
 func (s *StoryService) FindByID(ctx context.Context, in *pb.FindStoryByIDRequest) (*pb.Story, error) {

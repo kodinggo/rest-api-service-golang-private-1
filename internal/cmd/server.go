@@ -44,6 +44,14 @@ var serverCMD = &cobra.Command{
 			}
 		}()
 
+		// Init Repository
+		storyRepo := repository.NewStoryRepository(dbConn)
+		userRepo := repository.NewUserRepository(dbConn)
+
+		// Init Usecase
+		storyUsecase := usecase.NewStoryUsecase(storyRepo, userRepo)
+		authUsecase := usecase.NewAuthUsecase(userRepo)
+
 		go func() {
 			// Run HTTP server
 			e := echo.New()
@@ -52,14 +60,6 @@ var serverCMD = &cobra.Command{
 			e.GET("/ping", func(c echo.Context) error {
 				return c.String(http.StatusOK, "pong!")
 			})
-
-			// Init Repository
-			storyRepo := repository.NewStoryRepository(dbConn)
-			userRepo := repository.NewUserRepository(dbConn)
-
-			// Init Usecase
-			storyUsecase := usecase.NewStoryUsecase(storyRepo, userRepo)
-			authUsecase := usecase.NewAuthUsecase(userRepo)
 
 			// Init HTTP Handler
 			storyHandler := httpsvc.NewStoryHandler(storyUsecase)
@@ -75,7 +75,7 @@ var serverCMD = &cobra.Command{
 			// Run grpc server
 			grpcServer := grpc.NewServer()
 
-			storyService := grpcsvc.NewStoryService()
+			storyService := grpcsvc.NewStoryService(storyUsecase)
 			userService := grpcsvc.NewUserService()
 
 			pb.RegisterStoryServiceServer(grpcServer, storyService)
