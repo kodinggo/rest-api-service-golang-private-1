@@ -35,15 +35,7 @@ func (s *StoryService) FindAll(ctx context.Context, in *pb.FindAllStoriesRequest
 	// Konversi dari main entity ke protobuf
 	var pbStories []*pb.Story
 	for _, story := range stories {
-		pbStories = append(pbStories, &pb.Story{
-			Id:      story.ID,
-			Title:   story.Title,
-			Content: story.Content,
-			Author: &pb.User{
-				Id:       story.Author.ID,
-				Username: story.Author.Username,
-			},
-		})
+		pbStories = append(pbStories, story.ToProto())
 	}
 
 	return &pb.Stories{

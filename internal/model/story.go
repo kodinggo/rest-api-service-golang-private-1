@@ -3,6 +3,8 @@ package model
 import (
 	"context"
 	"time"
+
+	pb "github.com/kodinggo/rest-api-service-golang-private-1/pb/story"
 )
 
 type Story struct {
@@ -34,4 +36,13 @@ type StoryRepository interface {
 	FindByID(ctx context.Context, id int64) (*Story, error)
 	Create(ctx context.Context, data Story) (*Story, error)
 	Update(ctx context.Context, data Story) (*Story, error)
+}
+
+func (s Story) ToProto() *pb.Story {
+	return &pb.Story{
+		Id:      s.ID,
+		Title:   s.Title,
+		Content: s.Content,
+		Author:  s.Author.ToProto(),
+	}
 }
