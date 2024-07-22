@@ -31,3 +31,10 @@ func (u User) ToProto() *pb.User {
 		Username: u.Username,
 	}
 }
+
+func NewUserFromProto(p *pb.User) User {
+	return User{
+		ID:       p.Id,
+		Username: p.Username,
+	}
+}

@@ -46,3 +46,14 @@ func (s Story) ToProto() *pb.Story {
 		Author:  s.Author.ToProto(),
 	}
 }
+
+func NewStoryFromProto(p *pb.Story) Story {
+	story := Story{
+		ID:      p.Id,
+		Title:   p.Title,
+		Content: p.Content,
+	}
+	story.Author = NewUserFromProto(p.Author)
+
+	return story
+}

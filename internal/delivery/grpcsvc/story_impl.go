@@ -25,7 +25,7 @@ func (s *StoryService) FindAll(ctx context.Context, in *pb.FindAllStoriesRequest
 	stories, _, err := s.storyUsecase.FindAll(ctx, &model.StoryOptions{
 		Search: in.Search,
 		SortBy: in.SortBy,
-		Cursor: in.Cursor,
+		// Cursor: in.Cursor,
 	})
 	if err != nil {
 		log.Errorf("failed find all stories, error: %v", err)
@@ -44,11 +44,27 @@ func (s *StoryService) FindAll(ctx context.Context, in *pb.FindAllStoriesRequest
 }
 
 func (s *StoryService) FindByID(ctx context.Context, in *pb.FindStoryByIDRequest) (*pb.Story, error) {
-	panic("need implementation")
+	// Assume this is from real db
+	story := model.Story{
+		ID:    2,
+		Title: "Contoh title",
+	}
+
+	return story.ToProto(), nil
 }
 
 func (s *StoryService) Create(ctx context.Context, in *pb.CreateStoryRequest) (*pb.Story, error) {
-	panic("need implementation")
+	newStory, err := s.storyUsecase.Create(ctx, model.Story{
+		Title:   in.Title,
+		Content: in.Content,
+		Author:  model.User{ID: in.AuthorId},
+	})
+	if err != nil {
+		log.Errorf("failed create new story, error: %v", err)
+		return nil, err
+	}
+
+	return newStory.ToProto(), nil
 }
 
 func (s *StoryService) Update(ctx context.Context, in *pb.UpdateStoryRequest) (*pb.Story, error) {
