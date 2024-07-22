@@ -10,4 +10,4 @@ jwt:
   signing_key: bq6M68YCXnv2iltpH3h6dz51xn2Uv3dh
   exp: 24h
 comment_service:
-  grpc_port: :8083
+  grpc_host: localhost:8083

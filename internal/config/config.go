@@ -39,3 +39,7 @@ func JWTSigningKey() string {
 func JWTExp() time.Duration {
 	return viper.GetDuration("jwt.exp")
 }
+
+func CommentgRPCHost() string {
+	return viper.GetString("comment_service.grpc_host")
+}

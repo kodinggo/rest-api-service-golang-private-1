@@ -111,7 +111,7 @@ func init() {
 
 func newgRPCCommentClient() pbComment.CommentServiceClient {
 	// connect to grpc server without credentials
-	conn, err := grpc.NewClient("localhost:8083", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.CommentgRPCHost(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Panicf("failed to open connection grpc server, error %v", err)
 	}
