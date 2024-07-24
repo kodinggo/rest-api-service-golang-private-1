@@ -5,26 +5,30 @@ import (
 	"errors"
 	"sync"
 
+	pbCategory "github.com/kodinggo/category-service-gp1/pb/category"
 	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	log "github.com/sirupsen/logrus"
 )
 
 type storyUsecase struct {
-	storyRepo         model.StoryRepository
-	userRepo          model.UserRepository
-	grpcCommentClient pbComment.CommentServiceClient
+	storyRepo          model.StoryRepository
+	userRepo           model.UserRepository
+	grpcCommentClient  pbComment.CommentServiceClient
+	grpcCategoryClient pbCategory.CategoryServiceClient
 }
 
 func NewStoryUsecase(
 	storyRepo model.StoryRepository,
 	userRepo model.UserRepository,
 	grpcCommentClient pbComment.CommentServiceClient,
+	grpcCategoryClient pbCategory.CategoryServiceClient,
 ) model.StoryUsecase {
 	return &storyUsecase{
-		storyRepo:         storyRepo,
-		userRepo:          userRepo,
-		grpcCommentClient: grpcCommentClient,
+		storyRepo:          storyRepo,
+		userRepo:           userRepo,
+		grpcCommentClient:  grpcCommentClient,
+		grpcCategoryClient: grpcCategoryClient,
 	}
 }
 
@@ -37,24 +41,24 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 
 	// resolve author
 	var wg sync.WaitGroup
-	wg.Add(len(results) * 2)
+	wg.Add(len(results) * 3)
 
 	for idx, result := range results {
 		go func(idx int, result model.Story) {
 			defer wg.Done()
 			// Manggil gRPC comment
-			pbComments, err := u.grpcCommentClient.FindAllCommentsByStoryID(ctx,
+			commentsPB, err := u.grpcCommentClient.FindAllCommentsByStoryID(ctx,
 				&pbComment.FindAllCommentsByStoryIDRequest{
 					StoryId: result.ID,
 				})
-			if err != nil || pbComments == nil {
+			if err != nil || commentsPB == nil {
 				log.Errorf("failed when resolve comments, storyID: %d, error: %v", result.ID, err)
 				return
 			}
 
 			// Convert dari protobuf comment ke main comment entity
 			var comments []model.StoryComment
-			for _, pbComment := range pbComments.Comments {
+			for _, pbComment := range commentsPB.Comments {
 				comments = append(comments, model.StoryComment{
 					ID:      pbComment.Id,
 					Comment: pbComment.Comment,
@@ -62,6 +66,24 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 			}
 
 			results[idx].Comments = comments
+		}(idx, result)
+
+		go func(idx int, result model.Story) {
+			defer wg.Done()
+			// Manggil gRPC category
+			categoryPB, err := u.grpcCategoryClient.FindCategoryByID(ctx,
+				&pbCategory.FindCategoryByIDRequest{
+					Id: result.ID,
+				})
+			if err != nil || categoryPB == nil {
+				log.Errorf("failed when resolve category, storyID: %d, error: %v", result.ID, err)
+				return
+			}
+
+			results[idx].Category = model.StoryCategory{
+				ID:   categoryPB.Id,
+				Name: categoryPB.Name,
+			}
 		}(idx, result)
 
 		go func(idx int, result model.Story) {

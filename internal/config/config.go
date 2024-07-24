@@ -43,3 +43,7 @@ func JWTExp() time.Duration {
 func CommentgRPCHost() string {
 	return viper.GetString("comment_service.grpc_host")
 }
+
+func CategorygRPCHost() string {
+	return viper.GetString("category_service.grpc_host")
+}

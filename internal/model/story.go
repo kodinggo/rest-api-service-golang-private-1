@@ -8,14 +8,16 @@ import (
 )
 
 type Story struct {
-	ID        int64          `json:"id"`
-	Title     string         `json:"title" validate:"required"`
-	Content   string         `json:"content" validate:"required"`
-	Author    User           `json:"author"`
-	CreatedAt time.Time      `json:"created_at"`
-	Comments  []StoryComment `json:"comments"`
-	UpdatedAt time.Time      `json:"-"`
-	DeletedAt time.Time      `json:"-"`
+	ID         int64          `json:"id"`
+	Title      string         `json:"title" validate:"required"`
+	Content    string         `json:"content" validate:"required"`
+	Author     User           `json:"author"`
+	CreatedAt  time.Time      `json:"created_at"`
+	Comments   []StoryComment `json:"comments"`
+	Category   StoryCategory  `json:"category"`
+	CategoryID int64          `json:"-"`
+	UpdatedAt  time.Time      `json:"-"`
+	DeletedAt  time.Time      `json:"-"`
 }
 
 type StoryOptions struct {
@@ -27,6 +29,11 @@ type StoryOptions struct {
 type StoryComment struct {
 	ID      int64  `json:"id"`
 	Comment string `json:"comment"`
+}
+
+type StoryCategory struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 // TODO: Add other interface methods

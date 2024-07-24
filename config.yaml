@@ -11,3 +11,5 @@ jwt:
   exp: 24h
 comment_service:
   grpc_host: localhost:8083
+category_service:
+  grpc_host: localhost:8084

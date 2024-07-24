@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
+	pbCategory "github.com/kodinggo/category-service-gp1/pb/category"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/config"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/db"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/delivery/grpcsvc"
@@ -48,13 +49,17 @@ var serverCMD = &cobra.Command{
 
 		// Init gRPC clients
 		grpcCommentClient := newgRPCCommentClient()
+		grpcCategoryClient := newgRPCCategoryClient()
 
 		// Init Repository
 		storyRepo := repository.NewStoryRepository(dbConn)
 		userRepo := repository.NewUserRepository(dbConn)
 
 		// Init Usecase
-		storyUsecase := usecase.NewStoryUsecase(storyRepo, userRepo, grpcCommentClient)
+		storyUsecase := usecase.NewStoryUsecase(storyRepo, 
+			userRepo, 
+			grpcCommentClient, 
+			grpcCategoryClient)
 		authUsecase := usecase.NewAuthUsecase(userRepo)
 
 		go func() {
@@ -117,4 +122,15 @@ func newgRPCCommentClient() pbComment.CommentServiceClient {
 	}
 	// init grpc client as package dependency from grpc-server repository
 	return pbComment.NewCommentServiceClient(conn)
+}
+
+
+func newgRPCCategoryClient() pbCategory.CategoryServiceClient {
+	// connect to grpc server without credentials
+	conn, err := grpc.NewClient(config.CategorygRPCHost(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Panicf("failed to open connection grpc server, error %v", err)
+	}
+	// init grpc client as package dependency from grpc-server repository
+	return pbCategory.NewCategoryServiceClient(conn)
 }
