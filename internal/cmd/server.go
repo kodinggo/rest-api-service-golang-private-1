@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/signal"
 
-	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
 	pbCategory "github.com/kodinggo/category-service-gp1/pb/category"
+	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/config"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/db"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/delivery/grpcsvc"
@@ -28,6 +28,8 @@ var serverCMD = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Init DB connection
 		dbConn := db.InitMySQLConn()
+		// Init Redis Connection
+		redisConn := db.NewRedisClient()
 
 		sigCh := make(chan os.Signal, 1)
 		errCh := make(chan error, 1)
@@ -52,13 +54,13 @@ var serverCMD = &cobra.Command{
 		grpcCategoryClient := newgRPCCategoryClient()
 
 		// Init Repository
-		storyRepo := repository.NewStoryRepository(dbConn)
+		storyRepo := repository.NewStoryRepository(dbConn, redisConn)
 		userRepo := repository.NewUserRepository(dbConn)
 
 		// Init Usecase
-		storyUsecase := usecase.NewStoryUsecase(storyRepo, 
-			userRepo, 
-			grpcCommentClient, 
+		storyUsecase := usecase.NewStoryUsecase(storyRepo,
+			userRepo,
+			grpcCommentClient,
 			grpcCategoryClient)
 		authUsecase := usecase.NewAuthUsecase(userRepo)
 
@@ -123,7 +125,6 @@ func newgRPCCommentClient() pbComment.CommentServiceClient {
 	// init grpc client as package dependency from grpc-server repository
 	return pbComment.NewCommentServiceClient(conn)
 }
-
 
 func newgRPCCategoryClient() pbCategory.CategoryServiceClient {
 	// connect to grpc server without credentials

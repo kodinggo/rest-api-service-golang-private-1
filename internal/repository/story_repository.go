@@ -14,11 +14,12 @@ import (
 )
 
 type storyRepository struct {
-	db *sql.DB
+	db          *sql.DB
+	redisClient model.RedisClient
 }
 
-func NewStoryRepository(db *sql.DB) model.StoryRepository {
-	return &storyRepository{db: db}
+func NewStoryRepository(db *sql.DB, redisClient model.RedisClient) model.StoryRepository {
+	return &storyRepository{db: db, redisClient: redisClient}
 }
 
 func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
@@ -145,6 +146,9 @@ func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story,
 	var story model.Story
 	var authorID int64
 
+	// TODO: Cek apakah data ada pada redis, jika maka ambil dari redis
+	// Jika tidak maka lanjut ke mysql
+
 	// Scan fields
 	err := row.Scan(&story.ID,
 		&story.Title,
@@ -160,6 +164,8 @@ func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story,
 	story.Author = model.User{
 		ID: authorID,
 	}
+
+	// TODO: Store ke redis
 
 	return &story, nil
 }
