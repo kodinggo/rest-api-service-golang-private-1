@@ -23,8 +23,13 @@ func NewRedisClient() model.RedisClient {
 	return &redisClient{redisClient: rConn}
 }
 
-func (r *redisClient) Set(ctx context.Context, key string, value []byte, exp time.Duration) error {
-	err := r.redisClient.Set(ctx, key, value, exp).Err()
+func (r *redisClient) Set(ctx context.Context, key string, data any, exp time.Duration) error {
+	byteData, err := json.Marshal(data)
+	if err != nil {
+		log.Errorf("failed convert data to byte in redis set, error: %v", err)
+		return err
+	}
+	err = r.redisClient.Set(ctx, key, byteData, exp).Err()
 	if err != nil {
 		log.Errorf("failed insert data to redis, error: %v", err)
 	}

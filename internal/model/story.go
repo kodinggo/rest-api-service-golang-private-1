@@ -41,6 +41,7 @@ type StoryUsecase interface {
 	FindAll(ctx context.Context, opt *StoryOptions) ([]Story, int64, error)
 	Create(ctx context.Context, data Story) (*Story, error)
 	Update(ctx context.Context, data Story) (*Story, error)
+	FindByID(ctx context.Context, id int64) (*Story, error)
 }
 
 // TODO: Add other interface methods

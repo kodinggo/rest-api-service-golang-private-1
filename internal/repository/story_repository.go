@@ -10,6 +10,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
+	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -112,6 +113,9 @@ func (r *storyRepository) Create(ctx context.Context, data model.Story) (result 
 	data.ID, _ = res.LastInsertId()
 	data.CreatedAt = createdAt
 	result = &data
+
+	// TODO: Invalidate redis
+
 	return
 }
 
@@ -132,6 +136,9 @@ func (r *storyRepository) Update(ctx context.Context, data model.Story) (result 
 	data.ID, _ = res.LastInsertId()
 	data.UpdatedAt = updatedAt
 	result = &data
+
+	// TODO: Invalidate redis
+
 	return
 }
 
@@ -146,11 +153,19 @@ func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story,
 	var story model.Story
 	var authorID int64
 
-	// TODO: Cek apakah data ada pada redis, jika maka ambil dari redis
+	// Cek apakah data ada pada redis, jika ada maka ambil dari redis
 	// Jika tidak maka lanjut ke mysql
+	cacheKey := newStoryByIDCacheKey(int(id))
+	err := r.redisClient.Get(ctx, cacheKey, &story)
+	if err != nil && err != redis.Nil {
+		log.Errorf("failed get data from redis, error: %v", err)
+	}
+	if story.ID != 0 {
+		return &story, nil
+	}
 
 	// Scan fields
-	err := row.Scan(&story.ID,
+	err = row.Scan(&story.ID,
 		&story.Title,
 		&story.Content,
 		&authorID,
@@ -166,6 +181,10 @@ func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story,
 	}
 
 	// TODO: Store ke redis
+	err = r.redisClient.Set(ctx, cacheKey, story, 5*time.Minute)
+	if err != nil {
+		log.Errorf("failed set data to redis, error: %v", err)
+	}
 
 	return &story, nil
 }

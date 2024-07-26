@@ -64,8 +64,15 @@ func (h *StoryHandler) findAll(c echo.Context) error {
 }
 
 func (h *StoryHandler) findByID(c echo.Context) error {
-	// TODO
-	return c.JSON(http.StatusOK, "find by id")
+	idStr := c.Param("id")
+	idInt, _ := strconv.Atoi(idStr)
+
+	result, err := h.storyUsecase.FindByID(c.Request().Context(), int64(idInt))
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, result)
 }
 
 func (h *StoryHandler) create(c echo.Context) error {

@@ -105,6 +105,14 @@ func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (re
 	return
 }
 
+func (u *storyUsecase) FindByID(ctx context.Context, id int64) (*model.Story, error) {
+	story, err := u.storyRepo.FindByID(ctx, id)
+	if err != nil {
+		log.Errorf("failed find story by id, error: %v", err)
+	}
+	return story, err
+}
+
 func (u *storyUsecase) Create(ctx context.Context, data model.Story) (*model.Story, error) {
 	_, err := u.userRepo.FindByID(ctx, data.Author.ID)
 	if err != nil {
