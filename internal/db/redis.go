@@ -38,7 +38,11 @@ func (r *redisClient) Set(ctx context.Context, key string, data any, exp time.Du
 
 func (r *redisClient) Get(ctx context.Context, key string, data any) error {
 	value, err := r.redisClient.Get(ctx, key).Result()
-	if err != nil {
+	switch err {
+	case nil:
+	case redis.Nil:
+		return nil
+	default:
 		log.Errorf("failed get data from redis, error: %v", err)
 		return err
 	}

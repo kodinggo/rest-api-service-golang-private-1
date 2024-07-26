@@ -10,7 +10,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
-	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -157,7 +156,7 @@ func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story,
 	// Jika tidak maka lanjut ke mysql
 	cacheKey := newStoryByIDCacheKey(int(id))
 	err := r.redisClient.Get(ctx, cacheKey, &story)
-	if err != nil && err != redis.Nil {
+	if err != nil {
 		log.Errorf("failed get data from redis, error: %v", err)
 	}
 	if story.ID != 0 {
