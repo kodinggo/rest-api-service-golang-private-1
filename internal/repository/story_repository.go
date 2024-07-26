@@ -23,6 +23,17 @@ func NewStoryRepository(db *sql.DB, redisClient model.RedisClient) model.StoryRe
 }
 
 func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
+	// Cek apakah data ada pada redis, jika ada maka ambil dari redis
+	// Jika tidak maka lanjut ke mysql
+	cacheKey := newStoriesCacheKey(opt)
+	err = r.redisClient.HGet(ctx, storiesBucketKey, cacheKey, &results)
+	if err != nil {
+		log.Errorf("failed get data from redis, error: %v", err)
+	}
+	if len(results) > 0 {
+		return
+	}
+
 	selectQ := sq.Select("id, title, content, author_id, created_at").
 		From("stories").
 		OrderBy("created_at DESC")
@@ -94,6 +105,13 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 
 	// TODO: Please find total items
 
+	// Set data to redis
+	// Store ke redis
+	err = r.redisClient.HSet(ctx, storiesBucketKey, cacheKey, results, 5*time.Minute)
+	if err != nil {
+		log.Errorf("failed set data to redis, error: %v", err)
+	}
+
 	return
 }
 
@@ -113,7 +131,11 @@ func (r *storyRepository) Create(ctx context.Context, data model.Story) (result 
 	data.CreatedAt = createdAt
 	result = &data
 
-	// TODO: Invalidate redis
+	// Invalidate redis
+	err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
+	if err != nil {
+		log.Errorf("failed when delete data from redis, error: %v", err)
+	}
 
 	return
 }
@@ -136,7 +158,15 @@ func (r *storyRepository) Update(ctx context.Context, data model.Story) (result 
 	data.UpdatedAt = updatedAt
 	result = &data
 
-	// TODO: Invalidate redis
+	// Invalidate redis
+	err = r.redisClient.Del(ctx, newStoryByIDCacheKey(int(data.ID)))
+	if err != nil {
+		log.Errorf("failed when delete data from redis, error: %v", err)
+	}
+	err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
+	if err != nil {
+		log.Errorf("failed when delete data from redis, error: %v", err)
+	}
 
 	return
 }
@@ -179,7 +209,7 @@ func (r *storyRepository) FindByID(ctx context.Context, id int64) (*model.Story,
 		ID: authorID,
 	}
 
-	// TODO: Store ke redis
+	// Store ke redis
 	err = r.redisClient.Set(ctx, cacheKey, story, 5*time.Minute)
 	if err != nil {
 		log.Errorf("failed set data to redis, error: %v", err)
