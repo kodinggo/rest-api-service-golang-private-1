@@ -38,17 +38,17 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 		From("stories").
 		OrderBy("created_at DESC")
 
-	if opt.Search != "" {
+	if opt != nil && opt.Search != "" {
 		selectQ = selectQ.Where(sq.Like{
 			"title": fmt.Sprintf("%%%s%%", opt.Search),
 		})
 	}
 
-	if strings.ToLower(opt.SortBy) == "asc" {
+	if opt != nil && strings.ToLower(opt.SortBy) == "asc" {
 		selectQ = selectQ.OrderBy("created_at ASC")
 	}
 
-	if opt.Cursor != "" {
+	if opt != nil && opt.Cursor != "" {
 		// decode base64 to time string
 		decodedCursor, err := base64.StdEncoding.DecodeString(opt.Cursor)
 		if err != nil {
