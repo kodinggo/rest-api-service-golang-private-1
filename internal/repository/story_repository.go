@@ -140,7 +140,7 @@ func (r *storyRepository) Create(ctx context.Context, data model.Story) (result 
 
 	go func() {
 		// Invalidate redis
-		err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
+		err = r.redisClient.HDelByBucketKey(context.Background(), storiesBucketKey)
 		if err != nil {
 			log.Errorf("failed when delete data from redis, error: %v", err)
 		}
@@ -161,7 +161,7 @@ func (r *storyRepository) Create(ctx context.Context, data model.Story) (result 
 
 func (r *storyRepository) Update(ctx context.Context, data model.Story) (result *model.Story, err error) {
 	updatedAt := time.Now().UTC()
-	res, err := sq.Update("stories").
+	_, err = sq.Update("stories").
 		Set("title", data.Title).
 		Set("content", data.Content).
 		Set("created_at", updatedAt).
@@ -173,17 +173,16 @@ func (r *storyRepository) Update(ctx context.Context, data model.Story) (result 
 			Errorf("failed when insert data to story, error: %v", err)
 		return
 	}
-	data.ID, _ = res.LastInsertId()
 	data.UpdatedAt = updatedAt
 	result = &data
 
 	go func() {
 		// Invalidate redis
-		err = r.redisClient.Del(ctx, newStoryByIDCacheKey(int(data.ID)))
+		err = r.redisClient.Del(context.Background(), newStoryByIDCacheKey(int(data.ID)))
 		if err != nil {
 			log.Errorf("failed when delete data from redis, error: %v", err)
 		}
-		err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
+		err = r.redisClient.HDelByBucketKey(context.Background(), storiesBucketKey)
 		if err != nil {
 			log.Errorf("failed when delete data from redis, error: %v", err)
 		}
