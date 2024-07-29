@@ -33,7 +33,7 @@ func NewStoryUsecase(
 }
 
 func (u *storyUsecase) FindAll(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
-	results, _, err = u.storyRepo.FindAll(ctx, opt)
+	results, _, err = u.storyRepo.FindAllES(ctx, opt)
 	if err != nil {
 		log.Errorf("faled when find all stories from repo, error: %v", err)
 		return

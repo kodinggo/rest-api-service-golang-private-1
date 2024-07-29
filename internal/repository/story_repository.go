@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -119,7 +120,31 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 }
 
 func (r *storyRepository) FindAllES(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
-	panic("TODO")
+	boolQuery := elastic.NewBoolQuery()
+
+	if opt != nil && opt.Search != "" {
+		boolQuery = boolQuery.Should(
+			elastic.NewMatchQuery("title", opt.Search),
+			elastic.NewMatchQuery("content", opt.Search),
+		).
+			MinimumShouldMatch("1")
+	}
+
+	searchResult, err := r.esClient.Search().
+		Index(db.IndexName).
+		Query(boolQuery).
+		Do(context.Background())
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+
+	for _, res := range searchResult.Hits.Hits {
+		var result model.Story
+		json.Unmarshal(res.Source, &result)
+		results = append(results, result)
+	}
+
+	return
 }
 
 func (r *storyRepository) Create(ctx context.Context, data model.Story) (result *model.Story, err error) {
