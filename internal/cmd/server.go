@@ -30,6 +30,8 @@ var serverCMD = &cobra.Command{
 		dbConn := db.InitMySQLConn()
 		// Init Redis Connection
 		redisConn := db.NewRedisClient()
+		// Init Elasticsearch Connection
+		esConn := db.NewESClient()
 
 		sigCh := make(chan os.Signal, 1)
 		errCh := make(chan error, 1)
@@ -54,8 +56,8 @@ var serverCMD = &cobra.Command{
 		grpcCategoryClient := newgRPCCategoryClient()
 
 		// Init Repository
-		storyRepo := repository.NewStoryRepository(dbConn, redisConn)
-		userRepo := repository.NewUserRepository(dbConn)
+		storyRepo := repository.NewStoryRepository(dbConn, redisConn, esConn)
+		userRepo := repository.NewUserRepository(dbConn, esConn)
 
 		// Init Usecase
 		storyUsecase := usecase.NewStoryUsecase(storyRepo,

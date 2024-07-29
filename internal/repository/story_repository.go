@@ -10,16 +10,18 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
+	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
 type storyRepository struct {
 	db          *sql.DB
 	redisClient model.RedisClient
+	esClient    *elastic.Client
 }
 
-func NewStoryRepository(db *sql.DB, redisClient model.RedisClient) model.StoryRepository {
-	return &storyRepository{db: db, redisClient: redisClient}
+func NewStoryRepository(db *sql.DB, redisClient model.RedisClient, esClient *elastic.Client) model.StoryRepository {
+	return &storyRepository{db: db, redisClient: redisClient, esClient: esClient}
 }
 
 func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {

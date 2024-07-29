@@ -6,15 +6,17 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
+	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
 )
 
 type userRepository struct {
-	db *sql.DB
+	db       *sql.DB
+	esClient *elastic.Client
 }
 
-func NewUserRepository(db *sql.DB) model.UserRepository {
-	return &userRepository{db: db}
+func NewUserRepository(db *sql.DB, esClient *elastic.Client) model.UserRepository {
+	return &userRepository{db: db, esClient: esClient}
 }
 
 func (r *userRepository) FindByID(ctx context.Context, id int64) (result *model.User, err error) {
