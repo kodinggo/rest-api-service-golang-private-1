@@ -47,6 +47,7 @@ type StoryUsecase interface {
 // TODO: Add other interface methods
 type StoryRepository interface {
 	FindAll(ctx context.Context, opt *StoryOptions) ([]Story, int64, error)
+	FindAllES(ctx context.Context, opt *StoryOptions) (results []Story, totalItems int64, err error)
 	FindByID(ctx context.Context, id int64) (*Story, error)
 	Create(ctx context.Context, data Story) (*Story, error)
 	Update(ctx context.Context, data Story) (*Story, error)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/kodinggo/rest-api-service-golang-private-1/internal/db"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -117,6 +118,10 @@ func (r *storyRepository) FindAll(ctx context.Context, opt *model.StoryOptions) 
 	return
 }
 
+func (r *storyRepository) FindAllES(ctx context.Context, opt *model.StoryOptions) (results []model.Story, totalItems int64, err error) {
+	panic("TODO")
+}
+
 func (r *storyRepository) Create(ctx context.Context, data model.Story) (result *model.Story, err error) {
 	createdAt := time.Now().UTC()
 	res, err := sq.Insert("stories").
@@ -133,11 +138,23 @@ func (r *storyRepository) Create(ctx context.Context, data model.Story) (result 
 	data.CreatedAt = createdAt
 	result = &data
 
-	// Invalidate redis
-	err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
-	if err != nil {
-		log.Errorf("failed when delete data from redis, error: %v", err)
-	}
+	go func() {
+		// Invalidate redis
+		err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
+		if err != nil {
+			log.Errorf("failed when delete data from redis, error: %v", err)
+		}
+
+		// Insert data to elasticsearch
+		_, err = r.esClient.Index().
+			Index(db.IndexName).
+			Id(fmt.Sprintf("%d", data.ID)).
+			BodyJson(result).
+			Do(context.Background())
+		if err != nil {
+			log.Errorf("faild indexing document ID=%d: %s", data.ID, err)
+		}
+	}()
 
 	return
 }
@@ -160,15 +177,27 @@ func (r *storyRepository) Update(ctx context.Context, data model.Story) (result 
 	data.UpdatedAt = updatedAt
 	result = &data
 
-	// Invalidate redis
-	err = r.redisClient.Del(ctx, newStoryByIDCacheKey(int(data.ID)))
-	if err != nil {
-		log.Errorf("failed when delete data from redis, error: %v", err)
-	}
-	err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
-	if err != nil {
-		log.Errorf("failed when delete data from redis, error: %v", err)
-	}
+	go func() {
+		// Invalidate redis
+		err = r.redisClient.Del(ctx, newStoryByIDCacheKey(int(data.ID)))
+		if err != nil {
+			log.Errorf("failed when delete data from redis, error: %v", err)
+		}
+		err = r.redisClient.HDelByBucketKey(ctx, storiesBucketKey)
+		if err != nil {
+			log.Errorf("failed when delete data from redis, error: %v", err)
+		}
+
+		// Update data from elasticsearch
+		_, err = r.esClient.Update().
+			Index(db.IndexName).
+			Id(fmt.Sprintf("%d", data.ID)).
+			Doc(result).
+			Do(context.Background())
+		if err != nil {
+			log.Errorf("faild updating document ID=%d: %s", data.ID, err)
+		}
+	}()
 
 	return
 }

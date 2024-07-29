@@ -14,17 +14,14 @@ var esIndexCMD = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		esClient := db.NewESClient()
 
-		const mapping = `{}`
-		const indexName = "my_index"
-
-		esIndex, err := esClient.CreateIndex(indexName).BodyString(mapping).Do(context.Background())
+		esIndex, err := esClient.CreateIndex(db.IndexName).BodyString(db.Mapping).Do(context.Background())
 		if err != nil {
 			log.Panicf("failed when create elasticsearch index, error: %v", err)
 		}
 		if !esIndex.Acknowledged {
 			log.Warn("unsuccesfully creating index")
 		} else {
-			log.Warn("succesfully creating index")
+			log.Info("succesfully creating index")
 		}
 	},
 }
