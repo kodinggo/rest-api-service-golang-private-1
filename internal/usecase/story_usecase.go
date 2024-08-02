@@ -8,6 +8,7 @@ import (
 	pbCategory "github.com/kodinggo/category-service-gp1/pb/category"
 	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/model"
+	"github.com/kodinggo/rest-api-service-golang-private-1/internal/worker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,6 +17,7 @@ type storyUsecase struct {
 	userRepo           model.UserRepository
 	grpcCommentClient  pbComment.CommentServiceClient
 	grpcCategoryClient pbCategory.CategoryServiceClient
+	workerClient       *worker.WorkerClient
 }
 
 func NewStoryUsecase(
@@ -23,12 +25,14 @@ func NewStoryUsecase(
 	userRepo model.UserRepository,
 	grpcCommentClient pbComment.CommentServiceClient,
 	grpcCategoryClient pbCategory.CategoryServiceClient,
+	workerClient *worker.WorkerClient,
 ) model.StoryUsecase {
 	return &storyUsecase{
 		storyRepo:          storyRepo,
 		userRepo:           userRepo,
 		grpcCommentClient:  grpcCommentClient,
 		grpcCategoryClient: grpcCategoryClient,
+		workerClient:       workerClient,
 	}
 }
 
@@ -123,6 +127,17 @@ func (u *storyUsecase) Create(ctx context.Context, data model.Story) (*model.Sto
 	if err != nil {
 		log.Errorf("failed create new story, error: %v", err)
 	}
+
+	// Send Task to Queue
+	_, err = u.workerClient.SendEmail(worker.SendEmail{
+		From:    "john@gmail.com",
+		To:      "mark@gmail.com",
+		Subject: "Test",
+	})
+	if err != nil {
+		log.Errorf("failed send task for sending email to worker, error: %v", err)
+	}
+
 	return insertedData, err
 }
 

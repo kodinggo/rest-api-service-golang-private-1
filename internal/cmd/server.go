@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/hibiken/asynq"
 	pbCategory "github.com/kodinggo/category-service-gp1/pb/category"
 	pbComment "github.com/kodinggo/comment-service-gp1/pb/comment"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/config"
@@ -15,6 +16,7 @@ import (
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/delivery/httpsvc"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/repository"
 	"github.com/kodinggo/rest-api-service-golang-private-1/internal/usecase"
+	"github.com/kodinggo/rest-api-service-golang-private-1/internal/worker"
 	pb "github.com/kodinggo/rest-api-service-golang-private-1/pb/story"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cobra"
@@ -51,6 +53,14 @@ var serverCMD = &cobra.Command{
 			}
 		}()
 
+		// redis opt
+		redisOpt := asynq.RedisClientOpt{
+			Addr: "localhost:6379", // TODO: Make redis host configurable
+		}
+
+		// Init worker client
+		workerClient := worker.NewWorkerClient(redisOpt)
+
 		// Init gRPC clients
 		grpcCommentClient := newgRPCCommentClient()
 		grpcCategoryClient := newgRPCCategoryClient()
@@ -63,7 +73,8 @@ var serverCMD = &cobra.Command{
 		storyUsecase := usecase.NewStoryUsecase(storyRepo,
 			userRepo,
 			grpcCommentClient,
-			grpcCategoryClient)
+			grpcCategoryClient,
+			workerClient)
 		authUsecase := usecase.NewAuthUsecase(userRepo)
 
 		go func() {
@@ -105,6 +116,12 @@ var serverCMD = &cobra.Command{
 
 			err = grpcServer.Serve(lis)
 			if err != nil {
+				errCh <- err
+			}
+		}()
+
+		go func() {
+			if err := worker.NewWorkerServer(redisOpt); err != nil {
 				errCh <- err
 			}
 		}()
